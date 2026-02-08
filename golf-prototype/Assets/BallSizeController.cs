@@ -1,0 +1,85 @@
+using UnityEngine;
+
+public enum BallSize
+{
+    Small,
+    Normal,
+    Large
+}
+
+public class BallSizeController : MonoBehaviour
+{
+    [Header("Size Settings")]
+    [SerializeField] private float smallScale = 0.5f;
+    [SerializeField] private float normalScale = 1f;
+    [SerializeField] private float largeScale = 1.5f;
+    [SerializeField] private float sizeChangeCooldown = 0.2f;
+
+    private BallSize currentSize = BallSize.Normal;
+    private CircleCollider2D circleCollider;
+    private float lastSizeChangeTime = -999f;
+
+    public BallSize CurrentSize => currentSize;
+
+    private void Awake()
+    {
+        circleCollider = GetComponent<CircleCollider2D>();
+        SetSize(BallSize.Normal);
+    }
+
+    public void SetSize(BallSize newSize)
+    {
+        // Check cooldown
+        if (Time.time - lastSizeChangeTime < sizeChangeCooldown)
+            return;
+
+        currentSize = newSize;
+        lastSizeChangeTime = Time.time;
+
+        // Update scale
+        float targetScale = normalScale;
+        switch (currentSize)
+        {
+            case BallSize.Small:
+                targetScale = smallScale;
+                break;
+            case BallSize.Normal:
+                targetScale = normalScale;
+                break;
+            case BallSize.Large:
+                targetScale = largeScale;
+                break;
+        }
+
+        transform.localScale = Vector3.one * targetScale;
+
+        // Update collider radius (assuming base radius is 0.5)
+        if (circleCollider != null)
+        {
+            circleCollider.radius = 0.5f; // Unity scales this with transform.localScale
+        }
+
+        // Update UI
+        GameUI gameUI = FindObjectOfType<GameUI>();
+        if (gameUI != null)
+        {
+            gameUI.UpdateBallSize(currentSize);
+        }
+    }
+
+    public void Shrink()
+    {
+        if (currentSize == BallSize.Normal)
+            SetSize(BallSize.Small);
+        else if (currentSize == BallSize.Large)
+            SetSize(BallSize.Normal);
+    }
+
+    public void Grow()
+    {
+        if (currentSize == BallSize.Normal)
+            SetSize(BallSize.Large);
+        else if (currentSize == BallSize.Small)
+            SetSize(BallSize.Normal);
+    }
+}
