@@ -10,10 +10,10 @@ public class LethalWall : MonoBehaviour
             // Ball touched lethal wall - game over immediately
             ball.StopBall();
             
-            GameUI gameUI = FindObjectOfType<GameUI>();
+            GameUI gameUI = FindFirstObjectByType<GameUI>();
             if (gameUI != null)
             {
-                gameUI.ShowGameOver();
+                gameUI.ShowGameOver("GAME OVER!\nYou hit a lethal spiked wall!");
             }
         }
     }

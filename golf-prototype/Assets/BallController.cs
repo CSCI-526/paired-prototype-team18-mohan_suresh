@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class BallController : MonoBehaviour
 {
@@ -18,8 +19,9 @@ public class BallController : MonoBehaviour
     private float currentPower = 0f;
     private bool isCharging = false;
     private bool canShoot = true;
-    private int ballsRemaining = 5; // Changed from strokeCount
+    private int ballsRemaining = 15; // Changed from strokeCount
     private PowerBarUI powerBarUI;
+    private GameUI gameUI;
     private bool powerBarGoingUp = true;
     private Vector3 startPosition;
 
@@ -133,11 +135,11 @@ public class BallController : MonoBehaviour
 
     private void Start()
     {
-        powerBarUI = FindObjectOfType<PowerBarUI>();
+        powerBarUI = FindFirstObjectByType<PowerBarUI>();
+        gameUI = FindFirstObjectByType<GameUI>();
         startPosition = transform.position; // Remember start position for respawn
         
         // Initialize UI
-        GameUI gameUI = FindObjectOfType<GameUI>();
         if (gameUI != null)
         {
             gameUI.UpdateBallsRemaining(ballsRemaining);
@@ -146,6 +148,21 @@ public class BallController : MonoBehaviour
 
     private void Update()
     {
+        // Check for restart input (Escape key)
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            RestartGame();
+            return;
+        }
+        
+        // Check if game is over - disable all input
+        if (gameUI != null && gameUI.IsGameOver)
+        {
+            if (aimArrow != null && aimArrow.gameObject != null)
+                aimArrow.gameObject.SetActive(false);
+            return;
+        }
+        
         // Check if ball is nearly stopped
         canShoot = !IsMoving;
 
@@ -255,7 +272,6 @@ public class BallController : MonoBehaviour
         // Check if player has balls remaining
         if (ballsRemaining <= 0)
         {
-            GameUI gameUI = FindObjectOfType<GameUI>();
             if (gameUI != null)
             {
                 gameUI.ShowGameOver();
@@ -282,10 +298,15 @@ public class BallController : MonoBehaviour
             powerBarUI.Hide();
 
         // Update UI
-        GameUI gameUI2 = FindObjectOfType<GameUI>();
-        if (gameUI2 != null)
+        if (gameUI != null)
         {
-            gameUI2.UpdateBallsRemaining(ballsRemaining);
+            gameUI.UpdateBallsRemaining(ballsRemaining);
+            
+            // Check if this was the last ball
+            if (ballsRemaining <= 0)
+            {
+                gameUI.ShowGameOver();
+            }
         }
     }
 
@@ -307,5 +328,11 @@ public class BallController : MonoBehaviour
             powerBarUI.Hide();
         if (aimArrow != null && aimArrow.gameObject != null)
             aimArrow.gameObject.SetActive(false);
+    }
+    
+    private void RestartGame()
+    {
+        // Reload the current scene
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

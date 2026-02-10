@@ -9,6 +9,11 @@ public class GameUI : MonoBehaviour
     [SerializeField] private Text instructionsText;
     [SerializeField] private GameObject winPanel;
     [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private Text gameOverText;
+    
+    private bool isGameOver = false;
+    
+    public bool IsGameOver => isGameOver;
 
     private void Start()
     {
@@ -18,12 +23,12 @@ public class GameUI : MonoBehaviour
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
 
-        UpdateBallsRemaining(5);
+        UpdateBallsRemaining(15);
         UpdateBallSize(BallSize.Normal);
 
         if (instructionsText != null)
         {
-            instructionsText.text = "A/D: Rotate Aim | SPACE: Charge Power (press again to shoot)";
+            instructionsText.text = "A/D: Rotate Aim | SPACE: Charge Power (press again to shoot) | ESC: Restart";
         }
     }
 
@@ -31,7 +36,7 @@ public class GameUI : MonoBehaviour
     {
         if (ballsRemainingText != null)
         {
-            ballsRemainingText.text = "Balls: " + balls + "/5";
+            ballsRemainingText.text = "Balls: " + balls + "/15";
         }
     }
 
@@ -51,11 +56,22 @@ public class GameUI : MonoBehaviour
         }
     }
     
-    public void ShowGameOver()
+    public void ShowGameOver(string message = "GAME OVER!\nNo Balls Remaining")
     {
+        // If game is already over, don't override the message
+        if (isGameOver)
+            return;
+            
+        isGameOver = true;
+        
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
+        }
+        
+        if (gameOverText != null)
+        {
+            gameOverText.text = message;
         }
     }
 }

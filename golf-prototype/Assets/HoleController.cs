@@ -86,7 +86,7 @@ public class HoleController : MonoBehaviour
         ball.SetActive(false);
 
         // Show win screen
-        GameUI gameUI = FindObjectOfType<GameUI>();
+        GameUI gameUI = FindFirstObjectByType<GameUI>();
         if (gameUI != null)
         {
             gameUI.ShowWin();

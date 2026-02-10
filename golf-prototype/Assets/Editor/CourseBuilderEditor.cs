@@ -93,7 +93,7 @@ public class CourseBuilderEditor
             instructionsRect.anchoredPosition = new Vector2(0, 20);
             instructionsRect.sizeDelta = new Vector2(600, 30);
             Text instructionsText = instructionsTextObj.AddComponent<Text>();
-            instructionsText.text = "A/D: Rotate Aim | SPACE: Charge Power (press again to shoot)";
+            instructionsText.text = "A/D: Rotate Aim | SPACE: Charge Power (press again to shoot) | ESC: Restart";
             instructionsText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             instructionsText.fontSize = 16;
             instructionsText.color = Color.yellow;
@@ -271,12 +271,13 @@ public class CourseBuilderEditor
             serializedGameUI.FindProperty("instructionsText").objectReferenceValue = instructionsText;
             serializedGameUI.FindProperty("winPanel").objectReferenceValue = winPanel;
             serializedGameUI.FindProperty("gameOverPanel").objectReferenceValue = gameOverPanel;
+            serializedGameUI.FindProperty("gameOverText").objectReferenceValue = gameOverText;
             serializedGameUI.ApplyModifiedProperties();
 
             // Create Ball
             Debug.Log("Creating ball...");
             GameObject ball = new GameObject("Ball");
-            ball.transform.position = new Vector3(-8, -8, 0);
+            ball.transform.position = new Vector3(-7.5f, -7f, 0);
             
             // Add sprite renderer with circle sprite
             SpriteRenderer ballSprite = ball.AddComponent<SpriteRenderer>();
@@ -301,48 +302,113 @@ public class CourseBuilderEditor
             BallController ballController = ball.AddComponent<BallController>();
             BallSizeController ballSizeController = ball.AddComponent<BallSizeController>();
 
-            // STRATEGIC COURSE LAYOUT
-            // Ball starts bottom-left (-8, -8), must reach hole top-right (7, 7)
+            // EXACT COURSE LAYOUT FROM DESIGN
+            // Ball starts bottom-left, must navigate to top-right hole
             
-            // Create boundary walls
+            // Create boundary walls (implicit - not shown but needed)
             Debug.Log("Creating walls...");
-            CreateWall("Top Wall", new Vector3(0, 10, 0), new Vector2(22, 1), Color.gray);
-            CreateWall("Bottom Wall", new Vector3(0, -10, 0), new Vector2(22, 1), Color.gray);
-            CreateWall("Left Wall", new Vector3(-10, 0, 0), new Vector2(1, 22), Color.gray);
-            CreateWall("Right Wall", new Vector3(10, 0, 0), new Vector2(1, 22), Color.gray);
+            CreateWall("Top Wall", new Vector3(0, 10, 0), new Vector2(22, 0.5f), Color.gray);
+            CreateWall("Bottom Wall", new Vector3(0, -10, 0), new Vector2(22, 0.5f), Color.gray);
+            CreateWall("Left Wall", new Vector3(-10, 0, 0), new Vector2(0.5f, 22), Color.gray);
+            CreateWall("Right Wall", new Vector3(10, 0, 0), new Vector2(0.5f, 22), Color.gray);
 
-            // Strategic wall layout - creates a path the player must follow
-            // Bottom corridor wall - blocks direct path
-            CreateWall("Corridor Wall Bottom", new Vector3(-3, -5, 0), new Vector2(1, 8), Color.gray);
+            // LEFT-SIDE STRUCTURES
+            // Far left bottom: Small grey horizontal bar (bottom-left corner)
+            CreateWall("Far Left Grey Base", new Vector3(-8.5f, -8f, 0), new Vector2(3f, 1f), Color.gray);
             
-            // Middle corridor with spiky wall - player must navigate around it
-            CreateWall("Corridor Wall Left", new Vector3(0, 1, 0), new Vector2(8, 1), Color.gray);
-            CreateWall("Corridor Wall Right", new Vector3(3, -2, 0), new Vector2(1, 8), Color.gray);
+            // Far left: Small Red vertical bar (above grey bar)
+            CreateSizeZone("Red Zone Far Left", new Vector3(-9f, -5.5f, 0), new Vector2(1f, 4f), Color.red, SizeZoneType.Shrink);
             
-            // Upper area protection
-            CreateWall("Upper Wall", new Vector3(0, 6, 0), new Vector2(6, 1), Color.gray);
+            // Left-center: Grey L-shaped structure
+            CreateWall("Left Vertical Wall", new Vector3(-5f, -0.5f, 0), new Vector2(1.5f, 14f), Color.gray);
+            CreateWall("Left Horizontal Wall", new Vector3(-7f, 6.5f, 0), new Vector2(4.5f, 1.5f), Color.gray);
+            
+            // Blue vertical bar right of L-structure
+            CreateSizeZone("Blue Zone Left", new Vector3(-3.5f, 0.5f, 0), new Vector2(1.3f, 6f), Color.blue, SizeZoneType.Grow);
 
-            // LETHAL SPIKY WALL - positioned to block easy path to hole
-            Debug.Log("Creating lethal spiky wall...");
-            CreateSpikyLethalWall("Lethal Spiky Wall", new Vector3(6, 3, 0), new Vector2(0.8f, 8));
+            // BOTTOM-LEFT TO BOTTOM-CENTER PATH
+            // Diagonal Red Wall - starts mid-left, extends toward center-right
+            GameObject diagRedWall = new GameObject("Diagonal Red Wall");
+            diagRedWall.transform.position = new Vector3(-0.5f, -3.5f, 0);
+            diagRedWall.transform.rotation = Quaternion.Euler(0, 0, 18f);
+            diagRedWall.transform.localScale = new Vector3(6f, 1.3f, 1f);
+            SpriteRenderer diagRedSprite = diagRedWall.AddComponent<SpriteRenderer>();
+            diagRedSprite.sprite = CreateSquareSprite(Color.red);
+            BoxCollider2D diagRedCollider = diagRedWall.AddComponent<BoxCollider2D>();
+            diagRedCollider.size = Vector2.one;
+            PhysicsMaterial2D diagRedMat = new PhysicsMaterial2D(); diagRedMat.bounciness = 0.8f;
+            diagRedCollider.sharedMaterial = diagRedMat;
+            diagRedWall.AddComponent<SizeZone>().SetZoneType(SizeZoneType.Shrink);
 
-            // BLUE ZONE (Grow) - placed early in path
-            // Player must hit this first to become LARGE
-            Debug.Log("Creating size zones...");
-            CreateSizeZone("Blue Zone 1", new Vector3(-6, -2, 0), new Vector2(2, 1.5f), Color.blue, SizeZoneType.Grow);
+            // CENTER STRUCTURES
+            // Tall Vertical Wall (Main Divider) - tall grey wall in center-right area
+            CreateWall("Tall Vertical Main Wall", new Vector3(4f, 0.5f, 0), new Vector2(1.5f, 18f), Color.gray);
             
-            // RED ZONE (Shrink) - placed near the hole
-            // Player must hit this to return to NORMAL size before hole
-            CreateSizeZone("Red Zone 1", new Vector3(1, 8, 0), new Vector2(3, 1.5f), Color.red, SizeZoneType.Shrink);
+            // Blue Wall Zone - LEFT side of tall wall, lower portion
+            CreateSizeZone("Blue Zone Center-Left", new Vector3(2f, -2.5f, 0), new Vector2(1.3f, 5f), Color.blue, SizeZoneType.Grow);
             
-            // Additional strategic zones
-            CreateSizeZone("Blue Zone 2", new Vector3(-1, -7, 0), new Vector2(3, 1.5f), Color.blue, SizeZoneType.Grow);
-            CreateSizeZone("Red Zone 2", new Vector3(5, 7, 0), new Vector2(2, 1.5f), Color.red, SizeZoneType.Shrink);
+            // Red Wall Zone - RIGHT side of tall wall, upper portion
+            CreateSizeZone("Red Zone Center-Right", new Vector3(5f, 3.5f, 0), new Vector2(1.3f, 5f), Color.red, SizeZoneType.Shrink);
+
+            // BOTTOM-RIGHT JUNCTION (V-shaped with extensions)
+            // Small Red angled piece (upper part of junction)
+            GameObject angledRed = new GameObject("Angled Red Wall Junction");
+            angledRed.transform.position = new Vector3(5f, -4f, 0);
+            angledRed.transform.rotation = Quaternion.Euler(0, 0, 50f);
+            angledRed.transform.localScale = new Vector3(2f, 1f, 1f);
+            SpriteRenderer angledRedSprite = angledRed.AddComponent<SpriteRenderer>();
+            angledRedSprite.sprite = CreateSquareSprite(Color.red);
+            BoxCollider2D angledRedCollider = angledRed.AddComponent<BoxCollider2D>();
+            angledRedCollider.size = Vector2.one;
+            PhysicsMaterial2D angledRedMat = new PhysicsMaterial2D(); angledRedMat.bounciness = 0.8f;
+            angledRedCollider.sharedMaterial = angledRedMat;
+            angledRed.AddComponent<SizeZone>().SetZoneType(SizeZoneType.Shrink);
+            
+            // Blue angled wall - middle piece
+            GameObject angledBlue1 = new GameObject("Angled Blue Wall Junction");
+            angledBlue1.transform.position = new Vector3(4f, -5.5f, 0);
+            angledBlue1.transform.rotation = Quaternion.Euler(0, 0, -40f);
+            angledBlue1.transform.localScale = new Vector3(3f, 1.2f, 1f);
+            SpriteRenderer angledBlue1Sprite = angledBlue1.AddComponent<SpriteRenderer>();
+            angledBlue1Sprite.sprite = CreateSquareSprite(Color.blue);
+            BoxCollider2D angledBlue1Collider = angledBlue1.AddComponent<BoxCollider2D>();
+            angledBlue1Collider.size = Vector2.one;
+            PhysicsMaterial2D angledBlue1Mat = new PhysicsMaterial2D(); angledBlue1Mat.bounciness = 0.8f;
+            angledBlue1Collider.sharedMaterial = angledBlue1Mat;
+            angledBlue1.AddComponent<SizeZone>().SetZoneType(SizeZoneType.Grow);
+            
+            // Additional Blue angled wall - bottom right extension
+            GameObject angledBlue2 = new GameObject("Additional Blue Angled Wall");
+            angledBlue2.transform.position = new Vector3(5.5f, -7.5f, 0);
+            angledBlue2.transform.rotation = Quaternion.Euler(0, 0, 60f);
+            angledBlue2.transform.localScale = new Vector3(2.5f, 1f, 1f);
+            SpriteRenderer angledBlue2Sprite = angledBlue2.AddComponent<SpriteRenderer>();
+            angledBlue2Sprite.sprite = CreateSquareSprite(Color.blue);
+            BoxCollider2D angledBlue2Collider = angledBlue2.AddComponent<BoxCollider2D>();
+            angledBlue2Collider.size = Vector2.one;
+            PhysicsMaterial2D angledBlue2Mat = new PhysicsMaterial2D(); angledBlue2Mat.bounciness = 0.8f;
+            angledBlue2Collider.sharedMaterial = angledBlue2Mat;
+            angledBlue2.AddComponent<SizeZone>().SetZoneType(SizeZoneType.Grow);
+
+            // TOP-CENTER OBSTACLE
+            // Horizontal Red Wall - near top edge, wide center bar
+            CreateSizeZone("Top Center Red Wall", new Vector3(-1f, 8.5f, 0), new Vector2(10f, 1.2f), Color.red, SizeZoneType.Shrink);
+
+            // LETHAL SPIKY WALLS
+            // Top-Left Spikes - teeth pointing downward (short section)
+            Debug.Log("Creating lethal spiky walls...");
+            CreateSpikyLethalWall("Top-Left Spikes", new Vector3(-7.5f, 9.2f, 0), new Vector2(5f, 0.8f), true);
+            
+            // Right-Edge Spikes - teeth pointing leftward (ONLY lower-middle section, NOT full height)
+            CreateSpikyLethalWall("Right-Edge Spikes", new Vector3(9.2f, -2f, 0), new Vector2(0.8f, 12f), false);
+            
+            // Far Right Blue Zone (near right spikes, lower area)
+            CreateSizeZone("Blue Zone Far Right", new Vector3(7.5f, -3f, 0), new Vector2(1.5f, 5f), Color.blue, SizeZoneType.Grow);
 
             // Create Final Hole - positioned so player must navigate carefully
             Debug.Log("Creating hole...");
             GameObject hole = new GameObject("Final Hole");
-            hole.transform.position = new Vector3(7, 7, 0); // Moved slightly to fit flag
+            hole.transform.position = new Vector3(8.2f, 6.5f, 0); // Top-right quadrant
             
             SpriteRenderer holeSprite = hole.AddComponent<SpriteRenderer>();
             holeSprite.sprite = CreateOvalSprite(Color.black); // Black oval hole
@@ -360,13 +426,23 @@ public class CourseBuilderEditor
             
             // Create Flag above hole
             Debug.Log("Creating flag...");
-            CreateFlag(new Vector3(7, 7, 0)); // Match hole position
+            CreateFlag(new Vector3(8.2f, 6.5f, 0)); // Match hole position
 
             // Mark scene as dirty
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
 
+            // Frame the scene view to show the game area
+            if (SceneView.lastActiveSceneView != null)
+            {
+                SceneView sceneView = SceneView.lastActiveSceneView;
+                sceneView.in2DMode = true; // Switch to 2D mode
+                sceneView.pivot = Vector3.zero; // Center on origin
+                sceneView.size = 15f; // Zoom to show full play area
+                sceneView.Repaint();
+            }
+
             Debug.Log("Golf Prototype Scene built successfully!");
-            EditorUtility.DisplayDialog("Success", "Golf Prototype Scene built successfully!\n\nPress Play to test the game.", "OK");
+            EditorUtility.DisplayDialog("Success", "Golf Prototype Scene built successfully!\n\nPress Play to test the game.\n\nScene view has been set to 2D mode and centered.", "OK");
         }
         catch (System.Exception e)
         {
@@ -380,7 +456,7 @@ public class CourseBuilderEditor
     {
         GameObject wall = new GameObject(name);
         wall.transform.position = position;
-        wall.transform.localScale = new Vector3(size.x, size.y, 1);
+        wall.transform.localScale = new Vector3(size.x, size.y, 1f);
         
         SpriteRenderer sprite = wall.AddComponent<SpriteRenderer>();
         sprite.color = color;
@@ -400,7 +476,7 @@ public class CourseBuilderEditor
     {
         GameObject zone = new GameObject(name);
         zone.transform.position = position;
-        zone.transform.localScale = new Vector3(size.x, size.y, 1);
+        zone.transform.localScale = new Vector3(size.x, size.y, 1f);
         
         SpriteRenderer sprite = zone.AddComponent<SpriteRenderer>();
         sprite.color = color;
@@ -445,43 +521,169 @@ public class CourseBuilderEditor
         clothSprite.sortingOrder = 3;
     }
     
-    private static void CreateSpikyLethalWall(string name, Vector3 position, Vector2 size)
+    private static void CreateSpikyLethalWall(string name, Vector3 position, Vector2 size, bool horizontal)
     {
         GameObject wallParent = new GameObject(name);
         wallParent.transform.position = position;
         
-        // Create spikes ONLY (no base wall) - white color
-        int spikeCount = Mathf.CeilToInt(size.y / 0.4f); // One spike every 0.4 units
-        float spikeWidth = size.x;
-        float spikeHeight = 0.6f;
+        // Create sawtooth pattern with base against boundary
+        float toothWidth = 0.5f;
+        float toothHeight = 0.8f;
         
-        for (int i = 0; i < spikeCount; i++)
+        int toothCount;
+        if (horizontal)
         {
-            GameObject spike = new GameObject($"Spike {i}");
-            spike.transform.SetParent(wallParent.transform);
-            
-            // Position spikes vertically along the wall
-            float yPos = (i / (float)(spikeCount - 1)) * size.y - (size.y / 2f);
-            spike.transform.localPosition = new Vector3(0, yPos, 0);
-            spike.transform.localScale = new Vector3(spikeWidth, spikeHeight, 1f);
-            spike.transform.localRotation = Quaternion.Euler(0, 0, -90); // Point right
-            
-            SpriteRenderer spikeSprite = spike.AddComponent<SpriteRenderer>();
-            spikeSprite.sprite = CreateTriangleSprite(Color.white); // WHITE spikes
-            spikeSprite.sortingOrder = 2;
-            
-            // Add collider to spike
-            PolygonCollider2D spikeCollider = spike.AddComponent<PolygonCollider2D>();
-            
-            // No bounciness - instant stop
-            PhysicsMaterial2D lethalMaterial = new PhysicsMaterial2D("Lethal Material");
-            lethalMaterial.bounciness = 0f;
-            lethalMaterial.friction = 0f;
-            spikeCollider.sharedMaterial = lethalMaterial;
-            
-            // Add LethalWall component - game ends on touch
-            spike.AddComponent<LethalWall>();
+            toothCount = Mathf.CeilToInt(size.x / toothWidth);
         }
+        else
+        {
+            toothCount = Mathf.CeilToInt(size.y / toothWidth);
+        }
+        
+        // Create a single sprite with sawtooth pattern
+        GameObject sawtoothObj = new GameObject("Sawtooth");
+        sawtoothObj.transform.SetParent(wallParent.transform);
+        sawtoothObj.transform.localPosition = Vector3.zero;
+        
+        SpriteRenderer sawtoothSprite = sawtoothObj.AddComponent<SpriteRenderer>();
+        sawtoothSprite.sprite = CreateSawtoothSprite(Color.white, toothCount, horizontal);
+        sawtoothSprite.sortingOrder = 2;
+        
+        if (horizontal)
+        {
+            // Horizontal sawtooth (teeth pointing down, base at top)
+            sawtoothObj.transform.localScale = new Vector3(size.x / toothCount, toothHeight, 1f);
+        }
+        else
+        {
+            // Vertical sawtooth (teeth pointing left, base at right)
+            sawtoothObj.transform.localScale = new Vector3(toothHeight, size.y / toothCount, 1f);
+        }
+        
+        // Add polygon collider with sawtooth shape
+        PolygonCollider2D sawtoothCollider = sawtoothObj.AddComponent<PolygonCollider2D>();
+        
+        // Create sawtooth polygon points
+        Vector2[] points = new Vector2[(toothCount + 1) * 2];
+        
+        if (horizontal)
+        {
+            // Horizontal sawtooth
+            for (int i = 0; i <= toothCount; i++)
+            {
+                float x = (i / (float)toothCount) - 0.5f;
+                // Top edge (base of triangles)
+                points[i * 2] = new Vector2(x, 0.5f);
+                // Bottom edge (points of triangles)
+                if (i < toothCount)
+                {
+                    points[i * 2 + 1] = new Vector2(x + (0.5f / toothCount), -0.5f);
+                }
+            }
+            // Close the polygon
+            points[points.Length - 1] = points[0];
+        }
+        else
+        {
+            // Vertical sawtooth
+            for (int i = 0; i <= toothCount; i++)
+            {
+                float y = (i / (float)toothCount) - 0.5f;
+                // Right edge (base of triangles)
+                points[i * 2] = new Vector2(0.5f, y);
+                // Left edge (points of triangles)
+                if (i < toothCount)
+                {
+                    points[i * 2 + 1] = new Vector2(-0.5f, y + (0.5f / toothCount));
+                }
+            }
+            // Close the polygon
+            points[points.Length - 1] = points[0];
+        }
+        
+        sawtoothCollider.SetPath(0, points);
+        
+        // No bounciness - instant stop
+        PhysicsMaterial2D lethalMaterial = new PhysicsMaterial2D("Lethal Material");
+        lethalMaterial.bounciness = 0f;
+        lethalMaterial.friction = 0f;
+        sawtoothCollider.sharedMaterial = lethalMaterial;
+        
+        // Add LethalWall component - game ends on touch
+        sawtoothObj.AddComponent<LethalWall>();
+    }
+    
+    private static Sprite CreateSawtoothSprite(Color color, int toothCount, bool horizontal)
+    {
+        int texWidth = horizontal ? toothCount * 32 : 32;
+        int texHeight = horizontal ? 32 : toothCount * 32;
+        
+        Texture2D texture = new Texture2D(texWidth, texHeight);
+        Color[] pixels = new Color[texWidth * texHeight];
+        
+        // Initialize to transparent
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = Color.clear;
+        }
+        
+        if (horizontal)
+        {
+            // Horizontal sawtooth pattern
+            for (int y = 0; y < texHeight; y++)
+            {
+                for (int x = 0; x < texWidth; x++)
+                {
+                    int toothIndex = x / 32;
+                    int xInTooth = x % 32;
+                    
+                    // Normalized position in tooth (0 to 1)
+                    float normX = xInTooth / 32f;
+                    float normY = y / (float)texHeight;
+                    
+                    // Check if point is in triangle
+                    // Triangle: base at top (y=1), point at bottom center (y=0, x=0.5)
+                    float leftEdge = normX * 2f; // 0 to 2
+                    float rightEdge = (1f - normX) * 2f; // 2 to 0
+                    
+                    if (normY >= 1f - Mathf.Min(leftEdge, rightEdge))
+                    {
+                        pixels[y * texWidth + x] = color;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Vertical sawtooth pattern
+            for (int y = 0; y < texHeight; y++)
+            {
+                for (int x = 0; x < texWidth; x++)
+                {
+                    int toothIndex = y / 32;
+                    int yInTooth = y % 32;
+                    
+                    // Normalized position in tooth (0 to 1)
+                    float normX = x / (float)texWidth;
+                    float normY = yInTooth / 32f;
+                    
+                    // Check if point is in triangle
+                    // Triangle: base at right (x=1), point at left center (x=0, y=0.5)
+                    float topEdge = normY * 2f; // 0 to 2
+                    float bottomEdge = (1f - normY) * 2f; // 2 to 0
+                    
+                    if (normX >= 1f - Mathf.Min(topEdge, bottomEdge))
+                    {
+                        pixels[y * texWidth + x] = color;
+                    }
+                }
+            }
+        }
+        
+        texture.SetPixels(pixels);
+        texture.Apply();
+        
+        return Sprite.Create(texture, new Rect(0, 0, texWidth, texHeight), new Vector2(0.5f, 0.5f), 32f);
     }
 
     private static Sprite CreateCircleSprite(Color color)
@@ -497,7 +699,7 @@ public class CourseBuilderEditor
                 float dy = y - 32;
                 float distance = Mathf.Sqrt(dx * dx + dy * dy);
                 
-                if (distance <= 30)
+                if (distance <= 30f)
                 {
                     pixels[y * 64 + x] = color;
                 }
@@ -511,7 +713,7 @@ public class CourseBuilderEditor
         texture.SetPixels(pixels);
         texture.Apply();
         
-        return Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 64);
+        return Sprite.Create(texture, new Rect(0, 0, 64f, 64f), new Vector2(0.5f, 0.5f), 64f);
     }
 
     private static Sprite CreateSquareSprite(Color color)
@@ -527,7 +729,7 @@ public class CourseBuilderEditor
         texture.SetPixels(pixels);
         texture.Apply();
         
-        return Sprite.Create(texture, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32);
+        return Sprite.Create(texture, new Rect(0, 0, 32f, 32f), new Vector2(0.5f, 0.5f), 32f);
     }
     
     private static Sprite CreateTriangleSprite(Color color)
@@ -545,7 +747,7 @@ public class CourseBuilderEditor
                 float normalizedY = y / 32f;
                 float triangleWidth = normalizedY <= 0.5f ? (normalizedY * 2f) : ((1f - normalizedY) * 2f);
                 
-                if (x <= triangleWidth * 32)
+                if (x <= triangleWidth * 32f)
                 {
                     pixels[y * 32 + x] = color;
                 }
@@ -559,7 +761,7 @@ public class CourseBuilderEditor
         texture.SetPixels(pixels);
         texture.Apply();
         
-        return Sprite.Create(texture, new Rect(0, 0, 32, 32), new Vector2(0, 0.5f), 32);
+        return Sprite.Create(texture, new Rect(0, 0, 32f, 32f), new Vector2(0f, 0.5f), 32f);
     }
     
     private static Sprite CreateOvalSprite(Color color)
@@ -590,6 +792,6 @@ public class CourseBuilderEditor
         texture.SetPixels(pixels);
         texture.Apply();
         
-        return Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 64);
+        return Sprite.Create(texture, new Rect(0, 0, 64f, 64f), new Vector2(0.5f, 0.5f), 64f);
     }
 }

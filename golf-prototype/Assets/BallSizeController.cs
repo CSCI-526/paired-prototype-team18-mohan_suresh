@@ -60,7 +60,7 @@ public class BallSizeController : MonoBehaviour
         }
 
         // Update UI
-        GameUI gameUI = FindObjectOfType<GameUI>();
+        GameUI gameUI = FindFirstObjectByType<GameUI>();
         if (gameUI != null)
         {
             gameUI.UpdateBallSize(currentSize);
