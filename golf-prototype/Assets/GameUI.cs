@@ -4,30 +4,39 @@ using UnityEngine.UI;
 public class GameUI : MonoBehaviour
 {
     [Header("UI Elements")]
-    [SerializeField] private Text strokesText;
+    [SerializeField] private Text ballsRemainingText;
     [SerializeField] private Text ballSizeText;
     [SerializeField] private Text instructionsText;
     [SerializeField] private GameObject winPanel;
+    [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private Text gameOverText;
+    
+    private bool isGameOver = false;
+    
+    public bool IsGameOver => isGameOver;
 
     private void Start()
     {
         if (winPanel != null)
             winPanel.SetActive(false);
+            
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(false);
 
-        UpdateStrokes(0);
+        UpdateBallsRemaining(15);
         UpdateBallSize(BallSize.Normal);
 
         if (instructionsText != null)
         {
-            instructionsText.text = "A/D: Rotate Aim | SPACE: Charge Power (press again to shoot)";
+            instructionsText.text = "A/D: Rotate Aim | SPACE: Charge Power (press again to shoot) | ESC: Restart";
         }
     }
 
-    public void UpdateStrokes(int strokes)
+    public void UpdateBallsRemaining(int balls)
     {
-        if (strokesText != null)
+        if (ballsRemainingText != null)
         {
-            strokesText.text = "Strokes: " + strokes;
+            ballsRemainingText.text = "Balls: " + balls + "/15";
         }
     }
 
@@ -44,6 +53,25 @@ public class GameUI : MonoBehaviour
         if (winPanel != null)
         {
             winPanel.SetActive(true);
+        }
+    }
+    
+    public void ShowGameOver(string message = "GAME OVER!\nNo Balls Remaining")
+    {
+        // If game is already over, don't override the message
+        if (isGameOver)
+            return;
+            
+        isGameOver = true;
+        
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(true);
+        }
+        
+        if (gameOverText != null)
+        {
+            gameOverText.text = message;
         }
     }
 }
