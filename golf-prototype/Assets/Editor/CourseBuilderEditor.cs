@@ -301,6 +301,9 @@ public class CourseBuilderEditor
             BallController ballController = ball.AddComponent<BallController>();
             BallSizeController ballSizeController = ball.AddComponent<BallSizeController>();
 
+            // STRATEGIC COURSE LAYOUT
+            // Ball starts bottom-left (-8, -8), must reach hole top-right (7, 7)
+            
             // Create boundary walls
             Debug.Log("Creating walls...");
             CreateWall("Top Wall", new Vector3(0, 10, 0), new Vector2(22, 1), Color.gray);
@@ -308,32 +311,42 @@ public class CourseBuilderEditor
             CreateWall("Left Wall", new Vector3(-10, 0, 0), new Vector2(1, 22), Color.gray);
             CreateWall("Right Wall", new Vector3(10, 0, 0), new Vector2(1, 22), Color.gray);
 
-            // Create inner obstacle walls
-            CreateWall("Inner Wall 1", new Vector3(-5, 3, 0), new Vector2(1, 8), Color.gray);
-            CreateWall("Inner Wall 2", new Vector3(5, -3, 0), new Vector2(1, 8), Color.gray);
-            CreateWall("Inner Wall 3", new Vector3(0, 0, 0), new Vector2(10, 1), Color.gray);
-
-            // Create Red (Shrink) zones
-            Debug.Log("Creating size zones...");
-            CreateSizeZone("Red Zone 1", new Vector3(-5, 8, 0), new Vector2(3, 1), Color.red, SizeZoneType.Shrink);
-            CreateSizeZone("Red Zone 2", new Vector3(0, -4, 0), new Vector2(4, 1), Color.red, SizeZoneType.Shrink);
-
-            // Create Blue (Grow) zones
-            CreateSizeZone("Blue Zone 1", new Vector3(5, 8, 0), new Vector2(3, 1), Color.blue, SizeZoneType.Grow);
-            CreateSizeZone("Blue Zone 2", new Vector3(-5, -4, 0), new Vector2(4, 1), Color.blue, SizeZoneType.Grow);
+            // Strategic wall layout - creates a path the player must follow
+            // Bottom corridor wall - blocks direct path
+            CreateWall("Corridor Wall Bottom", new Vector3(-3, -5, 0), new Vector2(1, 8), Color.gray);
             
-            // Create Lethal Spiky Wall
-            Debug.Log("Creating lethal spiky wall...");
-            CreateSpikyLethalWall("Lethal Spiky Wall", new Vector3(2, 3, 0), new Vector2(1, 6));
+            // Middle corridor with spiky wall - player must navigate around it
+            CreateWall("Corridor Wall Left", new Vector3(0, 1, 0), new Vector2(8, 1), Color.gray);
+            CreateWall("Corridor Wall Right", new Vector3(3, -2, 0), new Vector2(1, 8), Color.gray);
+            
+            // Upper area protection
+            CreateWall("Upper Wall", new Vector3(0, 6, 0), new Vector2(6, 1), Color.gray);
 
-            // Create Final Hole
+            // LETHAL SPIKY WALL - positioned to block easy path to hole
+            Debug.Log("Creating lethal spiky wall...");
+            CreateSpikyLethalWall("Lethal Spiky Wall", new Vector3(6, 3, 0), new Vector2(0.8f, 8));
+
+            // BLUE ZONE (Grow) - placed early in path
+            // Player must hit this first to become LARGE
+            Debug.Log("Creating size zones...");
+            CreateSizeZone("Blue Zone 1", new Vector3(-6, -2, 0), new Vector2(2, 1.5f), Color.blue, SizeZoneType.Grow);
+            
+            // RED ZONE (Shrink) - placed near the hole
+            // Player must hit this to return to NORMAL size before hole
+            CreateSizeZone("Red Zone 1", new Vector3(1, 8, 0), new Vector2(3, 1.5f), Color.red, SizeZoneType.Shrink);
+            
+            // Additional strategic zones
+            CreateSizeZone("Blue Zone 2", new Vector3(-1, -7, 0), new Vector2(3, 1.5f), Color.blue, SizeZoneType.Grow);
+            CreateSizeZone("Red Zone 2", new Vector3(5, 7, 0), new Vector2(2, 1.5f), Color.red, SizeZoneType.Shrink);
+
+            // Create Final Hole - positioned so player must navigate carefully
             Debug.Log("Creating hole...");
             GameObject hole = new GameObject("Final Hole");
-            hole.transform.position = new Vector3(8, 8, 0);
+            hole.transform.position = new Vector3(7, 7, 0); // Moved slightly to fit flag
             
             SpriteRenderer holeSprite = hole.AddComponent<SpriteRenderer>();
-            holeSprite.sprite = CreateCircleSprite(new Color(0.2f, 0.8f, 0.2f));
-            hole.transform.localScale = Vector3.one * 1.5f;
+            holeSprite.sprite = CreateOvalSprite(Color.black); // Black oval hole
+            hole.transform.localScale = new Vector3(1.8f, 1.2f, 1f); // Oval shape (wider than tall)
             
             CircleCollider2D holeCollider = hole.AddComponent<CircleCollider2D>();
             holeCollider.radius = 0.5f;
@@ -347,7 +360,7 @@ public class CourseBuilderEditor
             
             // Create Flag above hole
             Debug.Log("Creating flag...");
-            CreateFlag(new Vector3(8, 8, 0));
+            CreateFlag(new Vector3(7, 7, 0)); // Match hole position
 
             // Mark scene as dirty
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -411,24 +424,24 @@ public class CourseBuilderEditor
         GameObject flag = new GameObject("Flag");
         flag.transform.position = holePosition;
         
-        // Create pole
+        // Create pole - WHITE color
         GameObject pole = new GameObject("Pole");
         pole.transform.SetParent(flag.transform);
-        pole.transform.localPosition = new Vector3(0, 1.5f, 0);
-        pole.transform.localScale = new Vector3(0.08f, 3f, 1f);
+        pole.transform.localPosition = new Vector3(0, 0.8f, 0); // Lower position
+        pole.transform.localScale = new Vector3(0.06f, 1.6f, 1f); // Shorter pole
         
         SpriteRenderer poleSprite = pole.AddComponent<SpriteRenderer>();
-        poleSprite.sprite = CreateSquareSprite(Color.yellow);
+        poleSprite.sprite = CreateSquareSprite(Color.white); // WHITE pole
         poleSprite.sortingOrder = 2;
         
-        // Create flag cloth (triangle)
+        // Create flag cloth (triangle) - RED, attached to pole
         GameObject cloth = new GameObject("Flag Cloth");
         cloth.transform.SetParent(flag.transform);
-        cloth.transform.localPosition = new Vector3(0.4f, 2.5f, 0);
-        cloth.transform.localScale = new Vector3(0.8f, 0.6f, 1f);
+        cloth.transform.localPosition = new Vector3(0.3f, 1.3f, 0); // Attached to top of pole
+        cloth.transform.localScale = new Vector3(0.5f, 0.4f, 1f); // Smaller flag
         
         SpriteRenderer clothSprite = cloth.AddComponent<SpriteRenderer>();
-        clothSprite.sprite = CreateTriangleSprite(Color.red);
+        clothSprite.sprite = CreateTriangleSprite(Color.red); // RED flag
         clothSprite.sortingOrder = 3;
     }
     
@@ -547,5 +560,36 @@ public class CourseBuilderEditor
         texture.Apply();
         
         return Sprite.Create(texture, new Rect(0, 0, 32, 32), new Vector2(0, 0.5f), 32);
+    }
+    
+    private static Sprite CreateOvalSprite(Color color)
+    {
+        Texture2D texture = new Texture2D(64, 64);
+        Color[] pixels = new Color[64 * 64];
+        
+        // Draw an oval (ellipse)
+        for (int y = 0; y < 64; y++)
+        {
+            for (int x = 0; x < 64; x++)
+            {
+                float dx = (x - 32) / 32f; // Normalize to -1 to 1
+                float dy = (y - 32) / 24f; // Different radius for oval (wider than tall)
+                float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                
+                if (distance <= 1f)
+                {
+                    pixels[y * 64 + x] = color;
+                }
+                else
+                {
+                    pixels[y * 64 + x] = Color.clear;
+                }
+            }
+        }
+        
+        texture.SetPixels(pixels);
+        texture.Apply();
+        
+        return Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.5f), 64);
     }
 }

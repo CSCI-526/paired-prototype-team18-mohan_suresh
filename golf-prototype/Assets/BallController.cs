@@ -4,7 +4,7 @@ public class BallController : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float maxPower = 50f; // Increased from 30f for much greater range
-    [SerializeField] private float powerBarSpeed = 15f; // Increased from 8f for faster movement
+    [SerializeField] private float powerBarSpeed = 25f; // Increased from 15f for even faster cursor
     [SerializeField] private float minVelocityToShoot = 0.1f;
     [SerializeField] private float rotationSpeed = 60f; // Reduced from 120f for more precise aiming
 
