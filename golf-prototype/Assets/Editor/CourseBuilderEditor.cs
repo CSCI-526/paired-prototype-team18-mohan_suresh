@@ -50,21 +50,21 @@ public class CourseBuilderEditor
             uiRect.anchoredPosition = new Vector2(20, -20);
             uiRect.sizeDelta = new Vector2(300, 100);
 
-            // Create Strokes Text
-            Debug.Log("Creating strokes text...");
-            GameObject strokesTextObj = new GameObject("Strokes Text");
-            strokesTextObj.transform.SetParent(uiPanel.transform, false);
-            RectTransform strokesRect = strokesTextObj.AddComponent<RectTransform>();
-            strokesRect.anchorMin = new Vector2(0, 1);
-            strokesRect.anchorMax = new Vector2(1, 1);
-            strokesRect.pivot = new Vector2(0, 1);
-            strokesRect.anchoredPosition = new Vector2(0, 0);
-            strokesRect.sizeDelta = new Vector2(0, 30);
-            Text strokesText = strokesTextObj.AddComponent<Text>();
-            strokesText.text = "Strokes: 0";
-            strokesText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            strokesText.fontSize = 20;
-            strokesText.color = Color.white;
+            // Create Balls Remaining Text
+            Debug.Log("Creating balls remaining text...");
+            GameObject ballsTextObj = new GameObject("Balls Remaining Text");
+            ballsTextObj.transform.SetParent(uiPanel.transform, false);
+            RectTransform ballsRect = ballsTextObj.AddComponent<RectTransform>();
+            ballsRect.anchorMin = new Vector2(0, 1);
+            ballsRect.anchorMax = new Vector2(1, 1);
+            ballsRect.pivot = new Vector2(0, 1);
+            ballsRect.anchoredPosition = new Vector2(0, 0);
+            ballsRect.sizeDelta = new Vector2(0, 30);
+            Text ballsText = ballsTextObj.AddComponent<Text>();
+            ballsText.text = "Balls: 5/5";
+            ballsText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            ballsText.fontSize = 20;
+            ballsText.color = Color.white;
 
             // Create Ball Size Text
             Debug.Log("Creating ball size text...");
@@ -125,6 +125,33 @@ public class CourseBuilderEditor
             winText.fontStyle = FontStyle.Bold;
 
             winPanel.SetActive(false);
+            
+            // Create Game Over Panel
+            Debug.Log("Creating game over panel...");
+            GameObject gameOverPanel = new GameObject("Game Over Panel");
+            gameOverPanel.transform.SetParent(canvasObj.transform, false);
+            RectTransform gameOverRect = gameOverPanel.AddComponent<RectTransform>();
+            gameOverRect.anchorMin = Vector2.zero;
+            gameOverRect.anchorMax = Vector2.one;
+            gameOverRect.sizeDelta = Vector2.zero;
+            Image gameOverImage = gameOverPanel.AddComponent<Image>();
+            gameOverImage.color = new Color(0, 0, 0, 0.8f);
+
+            GameObject gameOverTextObj = new GameObject("Game Over Text");
+            gameOverTextObj.transform.SetParent(gameOverPanel.transform, false);
+            RectTransform gameOverTextRect = gameOverTextObj.AddComponent<RectTransform>();
+            gameOverTextRect.anchorMin = Vector2.zero;
+            gameOverTextRect.anchorMax = Vector2.one;
+            gameOverTextRect.sizeDelta = Vector2.zero;
+            Text gameOverText = gameOverTextObj.AddComponent<Text>();
+            gameOverText.text = "GAME OVER!\nNo Balls Remaining";
+            gameOverText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            gameOverText.fontSize = 50;
+            gameOverText.color = Color.red;
+            gameOverText.alignment = TextAnchor.MiddleCenter;
+            gameOverText.fontStyle = FontStyle.Bold;
+
+            gameOverPanel.SetActive(false);
 
             // Create Power Bar UI
             Debug.Log("Creating power bar...");
@@ -239,10 +266,11 @@ public class CourseBuilderEditor
             GameUI gameUI = gameUIObj.AddComponent<GameUI>();
             
             SerializedObject serializedGameUI = new SerializedObject(gameUI);
-            serializedGameUI.FindProperty("strokesText").objectReferenceValue = strokesText;
+            serializedGameUI.FindProperty("ballsRemainingText").objectReferenceValue = ballsText;
             serializedGameUI.FindProperty("ballSizeText").objectReferenceValue = sizeText;
             serializedGameUI.FindProperty("instructionsText").objectReferenceValue = instructionsText;
             serializedGameUI.FindProperty("winPanel").objectReferenceValue = winPanel;
+            serializedGameUI.FindProperty("gameOverPanel").objectReferenceValue = gameOverPanel;
             serializedGameUI.ApplyModifiedProperties();
 
             // Create Ball
@@ -293,6 +321,10 @@ public class CourseBuilderEditor
             // Create Blue (Grow) zones
             CreateSizeZone("Blue Zone 1", new Vector3(5, 8, 0), new Vector2(3, 1), Color.blue, SizeZoneType.Grow);
             CreateSizeZone("Blue Zone 2", new Vector3(-5, -4, 0), new Vector2(4, 1), Color.blue, SizeZoneType.Grow);
+            
+            // Create Lethal Spiky Wall
+            Debug.Log("Creating lethal spiky wall...");
+            CreateSpikyLethalWall("Lethal Spiky Wall", new Vector3(2, 3, 0), new Vector2(1, 6));
 
             // Create Final Hole
             Debug.Log("Creating hole...");
@@ -398,6 +430,45 @@ public class CourseBuilderEditor
         SpriteRenderer clothSprite = cloth.AddComponent<SpriteRenderer>();
         clothSprite.sprite = CreateTriangleSprite(Color.red);
         clothSprite.sortingOrder = 3;
+    }
+    
+    private static void CreateSpikyLethalWall(string name, Vector3 position, Vector2 size)
+    {
+        GameObject wallParent = new GameObject(name);
+        wallParent.transform.position = position;
+        
+        // Create spikes ONLY (no base wall) - white color
+        int spikeCount = Mathf.CeilToInt(size.y / 0.4f); // One spike every 0.4 units
+        float spikeWidth = size.x;
+        float spikeHeight = 0.6f;
+        
+        for (int i = 0; i < spikeCount; i++)
+        {
+            GameObject spike = new GameObject($"Spike {i}");
+            spike.transform.SetParent(wallParent.transform);
+            
+            // Position spikes vertically along the wall
+            float yPos = (i / (float)(spikeCount - 1)) * size.y - (size.y / 2f);
+            spike.transform.localPosition = new Vector3(0, yPos, 0);
+            spike.transform.localScale = new Vector3(spikeWidth, spikeHeight, 1f);
+            spike.transform.localRotation = Quaternion.Euler(0, 0, -90); // Point right
+            
+            SpriteRenderer spikeSprite = spike.AddComponent<SpriteRenderer>();
+            spikeSprite.sprite = CreateTriangleSprite(Color.white); // WHITE spikes
+            spikeSprite.sortingOrder = 2;
+            
+            // Add collider to spike
+            PolygonCollider2D spikeCollider = spike.AddComponent<PolygonCollider2D>();
+            
+            // No bounciness - instant stop
+            PhysicsMaterial2D lethalMaterial = new PhysicsMaterial2D("Lethal Material");
+            lethalMaterial.bounciness = 0f;
+            lethalMaterial.friction = 0f;
+            spikeCollider.sharedMaterial = lethalMaterial;
+            
+            // Add LethalWall component - game ends on touch
+            spike.AddComponent<LethalWall>();
+        }
     }
 
     private static Sprite CreateCircleSprite(Color color)

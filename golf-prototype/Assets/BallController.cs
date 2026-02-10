@@ -3,10 +3,10 @@ using UnityEngine;
 public class BallController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float maxPower = 30f; // Increased from 15f for more distance
+    [SerializeField] private float maxPower = 50f; // Increased from 30f for much greater range
     [SerializeField] private float powerBarSpeed = 15f; // Increased from 8f for faster movement
     [SerializeField] private float minVelocityToShoot = 0.1f;
-    [SerializeField] private float rotationSpeed = 120f;
+    [SerializeField] private float rotationSpeed = 60f; // Reduced from 120f for more precise aiming
 
     [Header("Aim Settings")]
     [SerializeField] private Transform aimArrow;
@@ -18,11 +18,12 @@ public class BallController : MonoBehaviour
     private float currentPower = 0f;
     private bool isCharging = false;
     private bool canShoot = true;
-    private int strokeCount = 0;
+    private int ballsRemaining = 5; // Changed from strokeCount
     private PowerBarUI powerBarUI;
     private bool powerBarGoingUp = true;
+    private Vector3 startPosition;
 
-    public int StrokeCount => strokeCount;
+    public int BallsRemaining => ballsRemaining;
     public bool IsMoving => rb.linearVelocity.magnitude > minVelocityToShoot;
 
     private void Awake()
@@ -133,6 +134,14 @@ public class BallController : MonoBehaviour
     private void Start()
     {
         powerBarUI = FindObjectOfType<PowerBarUI>();
+        startPosition = transform.position; // Remember start position for respawn
+        
+        // Initialize UI
+        GameUI gameUI = FindObjectOfType<GameUI>();
+        if (gameUI != null)
+        {
+            gameUI.UpdateBallsRemaining(ballsRemaining);
+        }
     }
 
     private void Update()
@@ -243,6 +252,17 @@ public class BallController : MonoBehaviour
         if (!canShoot || !isCharging)
             return;
 
+        // Check if player has balls remaining
+        if (ballsRemaining <= 0)
+        {
+            GameUI gameUI = FindObjectOfType<GameUI>();
+            if (gameUI != null)
+            {
+                gameUI.ShowGameOver();
+            }
+            return;
+        }
+
         // Convert angle to direction vector
         float angleRad = aimAngle * Mathf.Deg2Rad;
         Vector2 direction = new Vector2(Mathf.Cos(angleRad), Mathf.Sin(angleRad));
@@ -250,20 +270,22 @@ public class BallController : MonoBehaviour
         // Apply force
         rb.AddForce(direction * currentPower, ForceMode2D.Impulse);
 
+        // Use one ball
+        ballsRemaining--;
+
         // Reset charging
         isCharging = false;
         currentPower = 0f;
-        strokeCount++;
 
         // Hide power bar
         if (powerBarUI != null)
             powerBarUI.Hide();
 
         // Update UI
-        GameUI gameUI = FindObjectOfType<GameUI>();
-        if (gameUI != null)
+        GameUI gameUI2 = FindObjectOfType<GameUI>();
+        if (gameUI2 != null)
         {
-            gameUI.UpdateStrokes(strokeCount);
+            gameUI2.UpdateBallsRemaining(ballsRemaining);
         }
     }
 

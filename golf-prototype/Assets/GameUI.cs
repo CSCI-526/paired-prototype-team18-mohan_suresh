@@ -4,17 +4,21 @@ using UnityEngine.UI;
 public class GameUI : MonoBehaviour
 {
     [Header("UI Elements")]
-    [SerializeField] private Text strokesText;
+    [SerializeField] private Text ballsRemainingText;
     [SerializeField] private Text ballSizeText;
     [SerializeField] private Text instructionsText;
     [SerializeField] private GameObject winPanel;
+    [SerializeField] private GameObject gameOverPanel;
 
     private void Start()
     {
         if (winPanel != null)
             winPanel.SetActive(false);
+            
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(false);
 
-        UpdateStrokes(0);
+        UpdateBallsRemaining(5);
         UpdateBallSize(BallSize.Normal);
 
         if (instructionsText != null)
@@ -23,11 +27,11 @@ public class GameUI : MonoBehaviour
         }
     }
 
-    public void UpdateStrokes(int strokes)
+    public void UpdateBallsRemaining(int balls)
     {
-        if (strokesText != null)
+        if (ballsRemainingText != null)
         {
-            strokesText.text = "Strokes: " + strokes;
+            ballsRemainingText.text = "Balls: " + balls + "/5";
         }
     }
 
@@ -44,6 +48,14 @@ public class GameUI : MonoBehaviour
         if (winPanel != null)
         {
             winPanel.SetActive(true);
+        }
+    }
+    
+    public void ShowGameOver()
+    {
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(true);
         }
     }
 }
