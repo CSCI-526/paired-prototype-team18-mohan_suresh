@@ -4,22 +4,22 @@ using UnityEngine.SceneManagement;
 public class BallController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float maxPower = 50f; // Increased from 30f for much greater range
-    [SerializeField] private float powerBarSpeed = 25f; // Increased from 15f for even faster cursor
+    [SerializeField] private float maxPower = 50f;
+    [SerializeField] private float powerBarSpeed = 25f;
     [SerializeField] private float minVelocityToShoot = 0.1f;
-    [SerializeField] private float rotationSpeed = 60f; // Reduced from 120f for more precise aiming
+    [SerializeField] private float rotationSpeed = 60f;
 
     [Header("Aim Settings")]
     [SerializeField] private Transform aimArrow;
-    [SerializeField] private float aimArrowLength = 3f; // Length of dot trail
-    [SerializeField] private int dotCount = 7; // Number of dots in trail
+    [SerializeField] private float aimArrowLength = 3f;
+    [SerializeField] private int dotCount = 7;
 
     private Rigidbody2D rb;
-    private float aimAngle = 0f; // Angle in degrees
+    private float aimAngle = 0f;
     private float currentPower = 0f;
     private bool isCharging = false;
     private bool canShoot = true;
-    private int ballsRemaining = 15; // Changed from strokeCount
+    private int ballsRemaining = 15;
     private PowerBarUI powerBarUI;
     private GameUI gameUI;
     private bool powerBarGoingUp = true;
@@ -32,11 +32,9 @@ public class BallController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         
-        // Setup Rigidbody2D
         rb.linearDamping = 2f;
         rb.gravityScale = 0f;
         
-        // Create aim arrow if not assigned
         if (aimArrow == null)
         {
             GameObject arrowObj = new GameObject("Aim Arrow");
@@ -44,19 +42,16 @@ public class BallController : MonoBehaviour
             arrowObj.transform.localPosition = Vector3.zero;
             aimArrow = arrowObj.transform;
             
-            // Create stream of diminishing dots instead of arrow
             for (int i = 0; i < dotCount; i++)
             {
                 GameObject dot = new GameObject($"Dot {i}");
                 dot.transform.SetParent(arrowObj.transform);
                 
-                // Position dots along the aim line
                 float t = (i + 1) / (float)dotCount;
                 float distance = aimArrowLength * t;
                 dot.transform.localPosition = Vector3.right * distance;
                 
-                // Create dot sprite with diminishing size
-                float sizeMultiplier = 1f - (t * 0.7f); // Size reduces from 100% to 30%
+                float sizeMultiplier = 1f - (t * 0.7f);
                 float dotSize = 0.25f * sizeMultiplier;
                 dot.transform.localScale = Vector3.one * dotSize;
                 
@@ -64,9 +59,8 @@ public class BallController : MonoBehaviour
                 dotSprite.sprite = CreateCircleSprite(Color.white);
                 dotSprite.sortingOrder = 10;
                 
-                // Optional: fade alpha as well for better effect
                 Color dotColor = Color.white;
-                dotColor.a = 0.7f + (0.3f * (1f - t)); // Fade from opaque to slightly transparent
+                dotColor.a = 0.7f + (0.3f * (1f - t));
                 dotSprite.color = dotColor;
             }
         }
@@ -107,15 +101,13 @@ public class BallController : MonoBehaviour
         Texture2D texture = new Texture2D(32, 32);
         Color[] pixels = new Color[32 * 32];
         
-        // Draw a right-pointing triangle (arrow head)
         for (int y = 0; y < 32; y++)
         {
             for (int x = 0; x < 32; x++)
             {
-                float normalizedY = (y - 16) / 16f; // -1 to 1
-                float normalizedX = x / 32f; // 0 to 1
+                float normalizedY = (y - 16) / 16f;
+                float normalizedX = x / 32f;
                 
-                // Triangle pointing right
                 if (normalizedX >= 0 && Mathf.Abs(normalizedY) <= (1f - normalizedX))
                 {
                     pixels[y * 32 + x] = color;
@@ -137,9 +129,8 @@ public class BallController : MonoBehaviour
     {
         powerBarUI = FindFirstObjectByType<PowerBarUI>();
         gameUI = FindFirstObjectByType<GameUI>();
-        startPosition = transform.position; // Remember start position for respawn
+        startPosition = transform.position;
         
-        // Initialize UI
         if (gameUI != null)
         {
             gameUI.UpdateBallsRemaining(ballsRemaining);
@@ -148,14 +139,12 @@ public class BallController : MonoBehaviour
 
     private void Update()
     {
-        // Check for restart input (Escape key)
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             RestartGame();
             return;
         }
         
-        // Check if game is over - disable all input
         if (gameUI != null && gameUI.IsGameOver)
         {
             if (aimArrow != null && aimArrow.gameObject != null)
@@ -163,11 +152,8 @@ public class BallController : MonoBehaviour
             return;
         }
         
-        // Check if ball is nearly stopped
         canShoot = !IsMoving;
 
-        // ALWAYS hide aim arrow when ball is moving OR when charging
-        // This prevents the weird thing showing in walls
         if (!canShoot || isCharging)
         {
             if (aimArrow != null && aimArrow.gameObject != null)
@@ -179,7 +165,6 @@ public class BallController : MonoBehaviour
                 return;
         }
 
-        // Only show aim dots when ball is completely stopped and not charging
         if (canShoot && !isCharging)
         {
             if (aimArrow != null && aimArrow.gameObject != null)
@@ -188,13 +173,10 @@ public class BallController : MonoBehaviour
             }
         }
 
-        // Handle aim rotation input (A/D for 360-degree aiming)
         HandleAimInput();
 
-        // Handle charging and shooting
         HandleShootInput();
 
-        // Update aim arrow rotation
         UpdateAimArrow();
     }
 
@@ -209,7 +191,6 @@ public class BallController : MonoBehaviour
             aimAngle -= rotationSpeed * Time.deltaTime;
         }
 
-        // Keep angle in 0-360 range
         aimAngle = aimAngle % 360f;
     }
 
@@ -219,7 +200,6 @@ public class BallController : MonoBehaviour
         {
             if (!isCharging)
             {
-                // Start charging
                 isCharging = true;
                 currentPower = 0f;
                 powerBarGoingUp = true;
@@ -228,15 +208,12 @@ public class BallController : MonoBehaviour
             }
             else
             {
-                // Fire!
                 Shoot();
             }
         }
 
-        // Animate power bar while charging
         if (isCharging)
         {
-            // Ping-pong power between 0 and maxPower
             if (powerBarGoingUp)
             {
                 currentPower += powerBarSpeed * Time.deltaTime;
@@ -256,7 +233,6 @@ public class BallController : MonoBehaviour
                 }
             }
 
-            // Update power bar UI
             if (powerBarUI != null)
             {
                 powerBarUI.SetPower(currentPower / maxPower);
@@ -269,7 +245,6 @@ public class BallController : MonoBehaviour
         if (!canShoot || !isCharging)
             return;
 
-        // Check if player has balls remaining
         if (ballsRemaining <= 0)
         {
             if (gameUI != null)
@@ -279,30 +254,23 @@ public class BallController : MonoBehaviour
             return;
         }
 
-        // Convert angle to direction vector
         float angleRad = aimAngle * Mathf.Deg2Rad;
         Vector2 direction = new Vector2(Mathf.Cos(angleRad), Mathf.Sin(angleRad));
 
-        // Apply force
         rb.AddForce(direction * currentPower, ForceMode2D.Impulse);
 
-        // Use one ball
         ballsRemaining--;
 
-        // Reset charging
         isCharging = false;
         currentPower = 0f;
 
-        // Hide power bar
         if (powerBarUI != null)
             powerBarUI.Hide();
 
-        // Update UI
         if (gameUI != null)
         {
             gameUI.UpdateBallsRemaining(ballsRemaining);
             
-            // Check if this was the last ball
             if (ballsRemaining <= 0)
             {
                 gameUI.ShowGameOver();
@@ -315,7 +283,6 @@ public class BallController : MonoBehaviour
         if (aimArrow == null || !canShoot || isCharging)
             return;
 
-        // Rotate dots to match aim angle
         aimArrow.rotation = Quaternion.Euler(0, 0, aimAngle);
     }
 
@@ -332,7 +299,6 @@ public class BallController : MonoBehaviour
     
     private void RestartGame()
     {
-        // Reload the current scene
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

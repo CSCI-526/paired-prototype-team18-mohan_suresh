@@ -35,7 +35,6 @@ public class PowerBarUI : MonoBehaviour
     {
         if (pointer != null && barRect != null)
         {
-            // Move pointer up and down the bar
             float barHeight = barRect.sizeDelta.y;
             float yPos = normalizedPower * barHeight - (barHeight / 2f);
             pointer.anchoredPosition = new Vector2(0, yPos);

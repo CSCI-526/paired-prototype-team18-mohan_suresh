@@ -29,14 +29,12 @@ public class BallSizeController : MonoBehaviour
 
     public void SetSize(BallSize newSize)
     {
-        // Check cooldown
         if (Time.time - lastSizeChangeTime < sizeChangeCooldown)
             return;
 
         currentSize = newSize;
         lastSizeChangeTime = Time.time;
 
-        // Update scale
         float targetScale = normalScale;
         switch (currentSize)
         {
@@ -53,13 +51,11 @@ public class BallSizeController : MonoBehaviour
 
         transform.localScale = Vector3.one * targetScale;
 
-        // Update collider radius (assuming base radius is 0.5)
         if (circleCollider != null)
         {
-            circleCollider.radius = 0.5f; // Unity scales this with transform.localScale
+            circleCollider.radius = 0.5f;
         }
 
-        // Update UI
         GameUI gameUI = FindFirstObjectByType<GameUI>();
         if (gameUI != null)
         {

@@ -58,7 +58,6 @@ public class GameUI : MonoBehaviour
     
     public void ShowGameOver(string message = "GAME OVER!\nNo Balls Remaining")
     {
-        // If game is already over, don't override the message
         if (isGameOver)
             return;
             

@@ -7,7 +7,6 @@ public class LethalWall : MonoBehaviour
         BallController ball = collision.gameObject.GetComponent<BallController>();
         if (ball != null)
         {
-            // Ball touched lethal wall - game over immediately
             ball.StopBall();
             
             GameUI gameUI = FindFirstObjectByType<GameUI>();
